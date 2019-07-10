@@ -5,6 +5,9 @@ from random import randint, choice
 class Node:
     def __init__(self, node_id, load, medium):
         #node specific
+        # In this simulation, we use 2 distinct time_slots. The CSMA mini time slot which is used as time_slots
+        # and the packet_time_slot which is the number of mini_time_slots that are needed for a packet to be fully transmitted.
+        # In this simulation, we let that packet_time_slot = 10 time slots. The unit of time is a packet_time_slot.
         self.incoming = []
         self.outgoing = []
         self.backoff_counter = 0
@@ -77,12 +80,13 @@ class Node:
         if frames_left == 0:
             packet_left = self.outgoing.pop(0) # packet succesfully transmitted in this time_slot
             self.departed_packet_counter = self.departed_packet_counter + 1
-            delay = self.time_slot - packet_left["generated_time_slot"]
+            delay = (self.time_slot - packet_left["generated_time_slot"]) / 10 #we count in packet_time_slots
             self.transmit = False #The node no longer transmits
             self.medium["idle"] = True #the medium is idle (from the part of the Node)
         self.update_stats(delay)
     
     def update_stats(self, delay):
+        #stats are counted in packet_time_slots
         if delay > self.max_delay:
             self.max_delay = delay
         self.sum_delay = delay + self.sum_delay
@@ -90,8 +94,8 @@ class Node:
             self.average_delay = self.sum_delay / self.departed_packet_counter
         except ZeroDivisionError:
             self.average_delay = 0
-        self.throughput = self.departed_packet_counter / self.time_slot
-        self.total_load = self.send_attempt / self.time_slot
+        self.throughput = self.departed_packet_counter / (self.time_slot / 10)
+        self.total_load = self.send_attempt / (self.time_slot / 10)
 
     def export_stats(self):
         return {
